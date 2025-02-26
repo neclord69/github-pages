@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planer Łazienkowy 3D</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+        }
+        canvas { 
+            display: block; 
+        }
+        #info { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            background: rgba(0, 0, 0, 0.7); 
+            padding: 10px; 
+            font-family: Arial, sans-serif; 
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        Kliknij na podłogę, aby dodać obiekt. Naciśnij 't', aby przełączyć widok.
+    </div>
+    <!-- Biblioteka Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Inicjalizacja sceny
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Tworzenie podłogi
+        const floorGeometry = new THREE.PlaneGeometry(10, 10);
+        const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Tworzenie ścian
+        const wallGeometry = new THREE.BoxGeometry(10, 2, 0.1);
+        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
+        const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
+        wall1.position.set(0, 1, -5);
+        scene.add(wall1);
+        const wall2 = new THREE.Mesh(wallGeometry, wallMaterial);
+        wall2.position.set(0, 1, 5);
+        scene.add(wall2);
+        const wall3 = new THREE.Mesh(wallGeometry, wallMaterial);
+        wall3.rotation.y = Math.PI / 2;
+        wall3.position.set(-5, 1, 0);
+        scene.add(wall3);
+        const wall4 = new THREE.Mesh(wallGeometry, wallMaterial);
+        wall4.rotation.y = Math.PI / 2;
+        wall4.position.set(5, 1, 0);
+        scene.add(wall4);
+
+        // Dodawanie oświetlenia
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        // Początkowa pozycja kamery (widok 3D)
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        // Funkcja renderująca
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Funkcja dodawania obiektów (prostopadłościanów)
+        function addObject(x, z) {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(x, 0.5, z); // Obiekt появляется na wysokości 0.5 nad podłogą
+            scene.add(cube);
+        }
+
+        // Obsługa kliknięcia myszą
+        renderer.domElement.addEventListener('click', function(event) {
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObject(floor);
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                addObject(point.x, point.z);
+            }
+        });
+
+        // Przełączanie widoków (3D / z góry)
+        let isTopView = false;
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 't') {
+                isTopView = !isTopView;
+                if (isTopView) {
+                    camera.position.set(0, 10, 0); // Widok z góry
+                    camera.lookAt(0, 0, 0);
+                } else {
+                    camera.position.set(0, 5, 10); // Widok 3D
+                    camera.lookAt(0, 0, 0);
+                }
+            }
+        });
+
+        // Dostosowanie rozmiaru renderera przy zmianie wielkości okna
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
